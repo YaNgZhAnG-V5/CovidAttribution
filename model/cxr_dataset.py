@@ -15,15 +15,22 @@ class CXRDataset(Dataset):
             transform=None,
             transform_bb=None,
             finding="any",
-            fine_tune=False):
+            fine_tune=False,
+            label_path=None):
 
         self.transform = transform
         self.transform_bb = transform_bb
         self.path_to_images = path_to_images
         if not fine_tune:
-            self.df = pd.read_csv("labels/nih_original_split.csv")
+            if label_path is not None:
+                self.df = pd.read_csv(label_path + "/nih_original_split.csv")
+            else:
+                self.df = pd.read_csv("labels/nih_original_split.csv")
         else:
-            self.df = pd.read_csv("labels/brixia_split.csv")
+            if label_path is not None:
+                self.df = pd.read_csv(label_path + "/brixia_split.csv")
+            else:
+                self.df = pd.read_csv("labels/brixia_split.csv")
         self.fold = fold
         self.fine_tune = fine_tune
 
