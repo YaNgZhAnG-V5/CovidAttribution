@@ -86,7 +86,7 @@ def make_pred_multilabel(dataloader, model, save_as_csv=False, fine_tune=False):
                         continue
         else:
             if column not in [
-                'Detector1',
+                'Detector01',
                 'Detector2',
                     'Detector3']:
                         continue

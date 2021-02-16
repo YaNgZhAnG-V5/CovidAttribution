@@ -510,7 +510,7 @@ def plot_map(model, dataloader, label=None, covid=False, saliency_layer=None):
             'Hernia']
     else:
         FINDINGS = [
-            'Detector1',
+            'Detector01',
             'Detector2',
             'Detector3']
 

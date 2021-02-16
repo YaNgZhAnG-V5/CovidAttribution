@@ -543,7 +543,7 @@ class Plotter:
               'Hernia']
       else:
           FINDINGS = [
-              'Detector1',
+              'Detector01',
               'Detector2',
               'Detector3']
 

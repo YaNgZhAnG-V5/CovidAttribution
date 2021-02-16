@@ -123,7 +123,7 @@ def train_model(
             'Hernia']
     else:
         PRED_LABEL = [
-            'Detector1',
+            'Detector01',
             'Detector2',
             'Detector3']
 
@@ -258,7 +258,7 @@ def train_model(
 
 def train_cnn(PATH_TO_IMAGES, LR, WEIGHT_DECAY, fine_tune=False, regression=False, freeze=False, adam=False,
               initial_model_path=None, initial_brixia_model_path=None, weighted_cross_entropy_batchwise=False,
-              modification=None, weighted_cross_entropy=False):
+              modification=None, weighted_cross_entropy=False, BATCH_SIZE=16):
     """
     Train torchvision model to NIH data given high level hyperparameters.
 
@@ -273,7 +273,6 @@ def train_cnn(PATH_TO_IMAGES, LR, WEIGHT_DECAY, fine_tune=False, regression=Fals
 
     """
     NUM_EPOCHS = 100
-    BATCH_SIZE = 16
 
     try:
         rmtree('results/')

@@ -56,7 +56,7 @@ class CXRDataset(Dataset):
                 'Hernia']
         else:
             self.PRED_LABEL = [
-                'Detector1',
+                'Detector01',
                 'Detector2',
                 'Detector3']
 
@@ -87,7 +87,7 @@ class CXRDataset(Dataset):
                                        ].iloc[idx].astype('int')
         elif self.fine_tune and not self.regression:
             covid_label = np.zeros(len(self.PRED_LABEL), dtype=int)
-            covid_label[0] = self.df['Detector1'].iloc[idx]
+            covid_label[0] = self.df['Detector01'].iloc[idx]
             covid_label[1] = self.df['Detector2'].iloc[idx]
             covid_label[2] = self.df['Detector3'].iloc[idx]
         else:
