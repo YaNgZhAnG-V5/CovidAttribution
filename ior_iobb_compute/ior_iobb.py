@@ -1,3 +1,4 @@
+from __future__ import division
 from PIL import Image
 import seaborn as sns
 import matplotlib.patches as patches
@@ -9,7 +10,7 @@ import os
 import json
 import time
 
-#uncomplete
+#complete
 def calculate_ior_iobb(cam, bbox):
     '''
     calculate ior and iobb
@@ -17,6 +18,8 @@ def calculate_ior_iobb(cam, bbox):
     args:
         cam: path of generated cam images in .jpg format
         bbox: [x,y,w,h]
+
+    return ior,iobb in float
     '''
     cam_jpg = Image.open(cam)
     cam = np.array(cam_jpg)
@@ -51,11 +54,9 @@ def calculate_ior_iobb(cam, bbox):
         return ior
 
     ior = compute_ior(activation_mask, bbox_mask)
-    #print('ior:')
-    #print(ior)
     iobb = compute_ior(object_masks_union, bbox_mask)
-    #print('iobb:')
-    #print(iobb)
+
+    return ior, iobb
 
 #complete
 def load_cam(cam_path, format='png'):
@@ -78,24 +79,34 @@ def load_bbox(csv_path, img, score):
     score: determine which score(s) we are interested in, dtype = list
     return the bbox list of this img
     '''
+
     df = pd.read_csv(csv_path)
     bbox_list = []
 
     idx = ['0','1','2','3','4','5']
     for _idx in idx:
         score_bbox_init = df.loc[ df['filename'] == img , _idx]
-
         if type(score_bbox_init.iloc[0]) is str:                #
             score_bbox_in_str = score_bbox_init.iloc[0]         # these three lines check whether the index correspond to empty cell.
             if type(len(score_bbox_in_str)) is int:             #
+
                 score_bbox_in_list = json.loads(score_bbox_in_str)
-                if score_bbox_in_list[0] in score:              #TODO: solve the 0,1 problem in covid_01_2_3_maps
-                    bb = score_bbox_in_list[-4:]
-                    bbox_list.append(bb)
+                if score[0] == -1: #for detector01
+                    if score_bbox_in_list[0] in [0,1]:              
+                        bb = score_bbox_in_list[-4:]
+                        bbox_list.append(bb)
+                elif score[0] == -2: #for covid_binary
+                    if score_bbox_in_list[0] in [2,3]:              
+                        bb = score_bbox_in_list[-4:]
+                        bbox_list.append(bb)
+                else:
+                    if score_bbox_in_list[0] in score:              
+                        bb = score_bbox_in_list[-4:]
+                        bbox_list.append(bb)
 
     return bbox_list
 
-#uncomplete
+#complete
 def iter_dir(method, root_path='F:/ior_iobb/'):
     '''
     return the working dir and the score of interest, both in list
@@ -110,7 +121,7 @@ def iter_dir(method, root_path='F:/ior_iobb/'):
 
     for ele in dir_list:
         if ele == 'covid_01_2_3_maps' and method == 'covid_01_2_3_maps':
-            score_of_interest = [0,1,2,3]
+            score_of_interest = [-1,2,3]
             working_dir = []
             for name in sub_dir_list:
                 subsub = os.listdir(os.path.join(root_path+'covid_01_2_3_maps/'+name))
@@ -134,7 +145,7 @@ def iter_dir(method, root_path='F:/ior_iobb/'):
                     working_dir.append(os.path.join(root_path+'covid_2_3_maps/'+name+subdir_of_subdir+'/'))
             return working_dir, score_of_interest
         elif ele == 'covid_binary_maps' and method == 'covid_binary_maps':
-            score_of_interest = []   #what to put here?
+            score_of_interest = [-2]   
             working_dir = []
             for name in sub_dir_list:
                 subsub = os.listdir(os.path.join(root_path+'covid_binary_maps/'+name))
@@ -144,19 +155,48 @@ def iter_dir(method, root_path='F:/ior_iobb/'):
 
 
 def exec_this(csv_path='F:/ior_iobb/bbox_final.csv'):
+    '''
+    the big red button :)
+    '''
     method = ['covid_01_2_3_maps','covid_1_2_3_maps','covid_2_3_maps','covid_binary_maps']
-    for mt in method:
-        working_dir, score_of_interest = iter_dir(mt)     
-        for wd in working_dir:
+    dict_mean_ior = {}
+    dict_mean_iobb = {}
+    for mt in method: #decide method, list dir for every method
+        working_dir, score_of_interest = iter_dir(mt)    
+        for wd in working_dir: #load cam list in working dir
+            dict_ior = {}
+            dict_iobb = {}
             cam_list = load_cam(wd)
-            for cam in cam_list:
+            ior_mean = 0.0
+            iobb_mean = 0.0
+
+            for cam in cam_list: #load bbox list for each cam
+
                 bbox_list = load_bbox(csv_path, cam, score_of_interest)
-                #print(bbox_list)
+                ior, iobb = 0.0, 0.0
+
                 for bb in bbox_list:
                     cam_location = os.path.join(wd,cam).replace('_mask_post.png','.jpg')
-                    #print(cam_location)
-                    calculate_ior_iobb(cam_location,bb)
-                    #print(bb)
+                    _ior, _iobb = calculate_ior_iobb(cam_location,bb)
+                    ior = ior + _ior
+                    iobb = iobb + _iobb
+                
+                dict_ior[cam]=ior           #   the ior and iobb for each cam is saved in these
+                dict_iobb[cam]=iobb         #   two dictionary.
+                ior_mean = ior_mean + ior
+                iobb_mean = iobb_mean + iobb
+
+            ior_mean = ior_mean/(len(cam_list))
+            iobb_mean = iobb_mean/(len(cam_list))
+
+            dict_mean_ior[wd+'_ior_mean'] = ior_mean,
+            dict_mean_iobb[wd+'_iobb_mean'] = iobb_mean
+
+    df_mean_ior = pd.DataFrame.from_dict(dict_mean_ior,orient='index')
+    df_mean_ior.to_csv('F:/ior_iobb/result_ior.csv')
+    df_mean_iobb = pd.DataFrame.from_dict(dict_mean_iobb,orient='index')
+    df_mean_iobb.to_csv('F:/ior_iobb/result_iobb.csv')
+
 
 start_time1 = time.clock()
 exec_this()
